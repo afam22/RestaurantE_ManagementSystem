@@ -1,10 +1,13 @@
 import { LightningElement, track, wire } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 import getAllTables from '@salesforce/apex/OrderService.getAllTables';
 import seatParty from '@salesforce/apex/OrderService.seatParty';
 
-export default class TableMap extends LightningElement {
+// NavigationMixin gives us the ability to navigate
+// between pages and pass URL state parameters
+export default class TableMap extends NavigationMixin(LightningElement) {
 
     @track tables = [];
     @track isLoading = true;
@@ -35,7 +38,7 @@ export default class TableMap extends LightningElement {
     getCardClass(status) {
         const base = 'table-card slds-box slds-m-around_x-small';
         if (status === 'Available') return `${base} table-available`;
-        if (status === 'Occupied') return `${base} table-occupied`;
+        if (status === 'Occupied')  return `${base} table-occupied`;
         return `${base} table-reserved`;
     }
 
@@ -55,13 +58,31 @@ export default class TableMap extends LightningElement {
         const status = event.currentTarget.dataset.status;
 
         if (status === 'Available') {
-            this.selectedTable = this.tables.find(t => t.Id === tableId);
+            // Show the seat party modal
+            this.selectedTable = this.tables.find(
+                t => t.Id === tableId
+            );
             this.showSeatModal = true;
+
         } else if (status === 'Occupied') {
-            // Navigate to order taking for this table
-            this.dispatchEvent(new CustomEvent('tableselected', {
-                detail: { tableId }
-            }));
+            // Find the selected table to get session details
+            const table = this.tables.find(t => t.Id === tableId);
+
+            // Navigate to the Take Order page
+            // passing tableId, sessionId, and tableNumber
+            // as URL state parameters
+            this[NavigationMixin.Navigate]({
+                type: 'standard__navItemPage',
+                attributes: {
+                    // This is the API name of your Take Order tab
+                    apiName: 'Take_Order'
+                },
+                state: {
+                    tableId: tableId,
+                    sessionId: table.Current_Session__c,
+                    tableNumber: table.Table_Number__c
+                }
+            });
         }
     }
 
@@ -76,9 +97,12 @@ export default class TableMap extends LightningElement {
                 tableId: this.selectedTable.Id,
                 partySize: this.partySize
             });
-            this.showToast('Success',
-                `Party of ${this.partySize} seated at Table ${this.selectedTable.Table_Number__c}`,
-                'success');
+            this.showToast(
+                'Party Seated',
+                `Table ${this.selectedTable.Table_Number__c} — ` +
+                `party of ${this.partySize} seated successfully`,
+                'success'
+            );
             this.closeModal();
             await refreshApex(this.wiredTablesResult);
         } catch (error) {
@@ -95,6 +119,8 @@ export default class TableMap extends LightningElement {
     }
 
     showToast(title, message, variant) {
-        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+        this.dispatchEvent(
+            new ShowToastEvent({ title, message, variant })
+        );
     }
 }

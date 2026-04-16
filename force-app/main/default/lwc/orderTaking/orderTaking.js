@@ -1,10 +1,12 @@
 import { LightningElement, api, track, wire } from 'lwc';
+import { CurrentPageReference } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getMenuWithItems from '@salesforce/apex/OrderService.getMenuWithItems';
 import submitOrder from '@salesforce/apex/OrderService.submitOrder';
 
 export default class OrderTaking extends LightningElement {
 
+    // These can still be set via App Builder as fallback
     @api tableId;
     @api sessionId;
     @api tableNumber;
@@ -14,6 +16,24 @@ export default class OrderTaking extends LightningElement {
     @track orderNotes = '';
     @track isLoading = true;
     @track tempIdCounter = 0;
+
+    // Read URL state parameters dynamically
+    // This fires whenever the page URL state changes
+    @wire(CurrentPageReference)
+    handlePageReference(pageRef) {
+        if (pageRef && pageRef.state) {
+            // Override App Builder values with URL params if present
+            if (pageRef.state.tableId) {
+                this.tableId = pageRef.state.tableId;
+            }
+            if (pageRef.state.sessionId) {
+                this.sessionId = pageRef.state.sessionId;
+            }
+            if (pageRef.state.tableNumber) {
+                this.tableNumber = pageRef.state.tableNumber;
+            }
+        }
+    }
 
     @wire(getMenuWithItems)
     wiredMenu({ data, error }) {
@@ -35,12 +55,17 @@ export default class OrderTaking extends LightningElement {
             .toFixed(2);
     }
 
+    get pageTitle() {
+        return this.tableNumber 
+            ? `Take Order — Table ${this.tableNumber}` 
+            : 'Take Order';
+    }
+
     handleAddItem(event) {
         const itemId = event.currentTarget.dataset.id;
         const itemName = event.currentTarget.dataset.name;
         const itemPrice = parseFloat(event.currentTarget.dataset.price);
 
-        // Check if item already in order
         const existingLine = this.orderLines.find(
             line => line.menuItemId === itemId
         );
@@ -129,16 +154,28 @@ export default class OrderTaking extends LightningElement {
     }
 
     async handleSubmitOrder() {
+        if (!this.tableId || !this.sessionId) {
+            this.showToast(
+                'Configuration Error',
+                'Table ID and Session ID are required. ' +
+                'Please select a table from the Floor Plan.',
+                'error'
+            );
+            return;
+        }
+
         if (this.orderLines.length === 0) {
-            this.showToast('Warning',
-                'Please add items before submitting', 'warning');
+            this.showToast(
+                'Warning',
+                'Please add items before submitting',
+                'warning'
+            );
             return;
         }
 
         try {
             this.isLoading = true;
 
-            // Prepare lines for Apex
             const apexLines = this.orderLines.map(line => ({
                 menuItemId: line.menuItemId,
                 menuItemName: line.menuItemName,
@@ -154,10 +191,12 @@ export default class OrderTaking extends LightningElement {
                 specialNotes: this.orderNotes
             });
 
-            this.showToast('Success',
-                'Order sent to kitchen!', 'success');
+            this.showToast(
+                '✅ Order Sent',
+                `Order sent to kitchen for Table ${this.tableNumber}`,
+                'success'
+            );
 
-            // Clear the order
             this.orderLines = [];
             this.orderNotes = '';
 
@@ -169,6 +208,8 @@ export default class OrderTaking extends LightningElement {
     }
 
     showToast(title, message, variant) {
-        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+        this.dispatchEvent(
+            new ShowToastEvent({ title, message, variant })
+        );
     }
 }
