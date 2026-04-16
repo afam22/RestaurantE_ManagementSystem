@@ -1,0 +1,139 @@
+<template>
+    <lightning-card title="Take Order" icon-name="standard:orders">
+        <div class="slds-p-around_medium">
+
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading menu">
+                </lightning-spinner>
+            </template>
+
+            <template if:false={isLoading}>
+                <div class="order-layout">
+
+                    <!-- Left panel: Menu -->
+                    <div class="menu-panel">
+                        <h3 class="slds-text-heading_small 
+                                   slds-m-bottom_small">
+                            Menu
+                        </h3>
+
+                        <template for:each={menuCategories} 
+                                  for:item="category">
+                            <div key={category.Id} 
+                                 class="slds-m-bottom_medium">
+                                <h4 class="category-header">
+                                    {category.Name}
+                                </h4>
+                                <template for:each={category.Menu_Items__r} 
+                                          for:item="item">
+                                    <div key={item.Id}
+                                         class="menu-item-card slds-box 
+                                                slds-m-bottom_x-small"
+                                         onclick={handleAddItem}
+                                         data-id={item.Id}
+                                         data-name={item.Name}
+                                         data-price={item.Price__c}>
+                                        <div class="item-name">
+                                            {item.Name}
+                                        </div>
+                                        <div class="item-description">
+                                            {item.Description__c}
+                                        </div>
+                                        <div class="item-price">
+                                            ${item.Price__c}
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Right panel: Current Order -->
+                    <div class="order-panel">
+                        <h3 class="slds-text-heading_small 
+                                   slds-m-bottom_small">
+                            Current Order — Table {tableNumber}
+                        </h3>
+
+                        <template if:true={hasOrderLines}>
+                            <template for:each={orderLines} 
+                                      for:item="line">
+                                <div key={line.tempId} 
+                                     class="order-line slds-box 
+                                            slds-m-bottom_x-small">
+                                    <div class="line-name">
+                                        {line.menuItemName}
+                                    </div>
+                                    <div class="line-controls">
+                                        <lightning-button-icon
+                                            icon-name="utility:dash"
+                                            onclick={handleDecrement}
+                                            data-id={line.tempId}>
+                                        </lightning-button-icon>
+                                        <span class="quantity">
+                                            {line.quantity}
+                                        </span>
+                                        <lightning-button-icon
+                                            icon-name="utility:add"
+                                            onclick={handleIncrement}
+                                            data-id={line.tempId}>
+                                        </lightning-button-icon>
+                                        <span class="line-total">
+                                            ${line.lineTotal}
+                                        </span>
+                                        <lightning-button-icon
+                                            icon-name="utility:delete"
+                                            variant="error"
+                                            onclick={handleRemoveLine}
+                                            data-id={line.tempId}>
+                                        </lightning-button-icon>
+                                    </div>
+                                    <lightning-input
+                                        type="text"
+                                        label="Special Instructions"
+                                        placeholder="e.g. no nuts, extra sauce"
+                                        value={line.specialInstructions}
+                                        onchange={handleInstructionChange}
+                                        data-id={line.tempId}>
+                                    </lightning-input>
+                                </div>
+                            </template>
+
+                            <!-- Order notes -->
+                            <lightning-textarea
+                                label="Order Notes"
+                                placeholder="Any notes for the kitchen"
+                                value={orderNotes}
+                                onchange={handleNotesChange}>
+                            </lightning-textarea>
+
+                            <!-- Subtotal -->
+                            <div class="subtotal slds-m-top_small">
+                                <span>Subtotal:</span>
+                                <span class="subtotal-amount">
+                                    ${subtotal}
+                                </span>
+                            </div>
+
+                            <!-- Submit button -->
+                            <lightning-button
+                                variant="brand"
+                                label="Send to Kitchen"
+                                class="slds-m-top_small"
+                                onclick={handleSubmitOrder}>
+                            </lightning-button>
+
+                        </template>
+
+                        <template if:false={hasOrderLines}>
+                            <div class="empty-order">
+                                Tap menu items to add them to the order
+                            </div>
+                        </template>
+                    </div>
+
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>
