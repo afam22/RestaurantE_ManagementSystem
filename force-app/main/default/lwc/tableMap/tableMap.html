@@ -1,0 +1,77 @@
+<template>
+    <lightning-card title="Restaurant Floor Plan" icon-name="standard:location">
+        <div class="slds-p-around_medium">
+
+            <!-- Loading state -->
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading tables">
+                </lightning-spinner>
+            </template>
+
+            <!-- Table grid -->
+            <template if:false={isLoading}>
+                <div class="table-grid">
+                    <template for:each={tables} for:item="table">
+                        <div key={table.Id}
+                             class={table.cardClass}
+                             onclick={handleTableClick}
+                             data-id={table.Id}
+                             data-status={table.Status__c}>
+
+                            <div class="table-number">
+                                Table {table.Table_Number__c}
+                            </div>
+                            <div class="table-capacity">
+                                Seats {table.Capacity__c}
+                            </div>
+                            <div class="table-status">
+                                {table.Status__c}
+                            </div>
+                            <template if:true={table.isOccupied}>
+                                <div class="seated-time">
+                                    Seated: {table.seatedDuration}
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Seat party modal -->
+            <template if:true={showSeatModal}>
+                <section class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 class="slds-text-heading_medium">
+                                Seat Party at Table {selectedTable.Table_Number__c}
+                            </h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <lightning-input
+                                type="number"
+                                label="Number of Guests"
+                                value={partySize}
+                                min="1"
+                                max={selectedTable.Capacity__c}
+                                onchange={handlePartySizeChange}>
+                            </lightning-input>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <lightning-button
+                                label="Cancel"
+                                onclick={closeModal}>
+                            </lightning-button>
+                            <lightning-button
+                                variant="brand"
+                                label="Seat Party"
+                                onclick={handleSeatParty}>
+                            </lightning-button>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>
