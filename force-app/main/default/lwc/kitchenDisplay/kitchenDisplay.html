@@ -1,0 +1,97 @@
+<template>
+    <lightning-card title="Kitchen Display" 
+                    icon-name="standard:food_and_drink">
+        <div class="slds-p-around_medium">
+
+            <template if:true={isLoading}>
+                <lightning-spinner 
+                    alternative-text="Loading orders">
+                </lightning-spinner>
+            </template>
+
+            <template if:false={isLoading}>
+                <template if:true={hasOrders}>
+                    <div class="kitchen-grid">
+                        <template for:each={activeOrders} 
+                                  for:item="order">
+                            <div key={order.Id} 
+                                 class={order.cardClass}>
+
+                                <div class="order-header">
+                                    <span class="table-badge">
+                                        Table {order.Table__r.Table_Number__c}
+                                    </span>
+                                    <span class="order-time">
+                                        {order.formattedTime}
+                                    </span>
+                                    <span class={order.statusClass}>
+                                        {order.Status__c}
+                                    </span>
+                                </div>
+
+                                <div class="order-items 
+                                            slds-m-top_small">
+                                    <template 
+                                        for:each={order.Order_Lines__r}
+                                        for:item="line">
+                                        <div key={line.Id} 
+                                             class="kitchen-item">
+                                            <span class="item-qty">
+                                                x{line.Quantity__c}
+                                            </span>
+                                            <span class="item-name">
+                                                {line.Menu_Item__r.Name}
+                                            </span>
+                                            <template 
+                                                if:true={line.Special_Instructions__c}>
+                                                <div class="special-note">
+                                                    ⚠ {line.Special_Instructions__c}
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <template if:true={order.Special_Notes__c}>
+                                    <div class="order-notes">
+                                        📝 {order.Special_Notes__c}
+                                    </div>
+                                </template>
+
+                                <div class="action-buttons 
+                                            slds-m-top_small">
+                                    <template 
+                                        if:true={order.canStartPrep}>
+                                        <lightning-button
+                                            variant="brand"
+                                            label="Start Preparing"
+                                            onclick={handleStartPrep}
+                                            data-id={order.Id}>
+                                        </lightning-button>
+                                    </template>
+                                    <template 
+                                        if:true={order.canMarkReady}>
+                                        <lightning-button
+                                            variant="success"
+                                            label="Mark Ready"
+                                            onclick={handleMarkReady}
+                                            data-id={order.Id}>
+                                        </lightning-button>
+                                    </template>
+                                </div>
+
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <template if:false={hasOrders}>
+                    <div class="no-orders">
+                        No active orders — kitchen is clear
+                    </div>
+                </template>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>
